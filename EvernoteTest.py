@@ -4,6 +4,7 @@ import logging
 from evernote.api.client import EvernoteClient
 from HTMLParser import HTMLParser
 import talkey
+from weather import weatherReport
 
 logging.basicConfig(level='INFO')
 
@@ -37,26 +38,42 @@ noteGuid  = "1e77d88b-49e6-4410-aaf5-c85c3bb70a0d"
 tts = talkey.Talkey()
 tts.say("This is a test")
 
-client = EvernoteClient(token=dev_token)
-userStore = client.get_user_store()
-user = userStore.getUser()          # here will throw an error
-print user.username
-noteStore = client.get_note_store()
-notebooks = noteStore.listNotebooks()
-for n in notebooks:
-    print n.name
+# Sign in the Evernote
+client = None
+noteStore = None
 
-content = noteStore.getNoteContent(noteGuid)
-print(content)
+def SignInEvernote():
+    global client,noteStore 
+    try:
+        client = EvernoteClient(token=dev_token)
+        userStore = client.get_user_store()
+        user = userStore.getUser()          # here will throw an error
+        logging.info(user.username)
+        noteStore = client.get_note_store()
+    except Exception, e:
+        logging.warn(e)
 
-parser = MyHTMLParser()
-parser.feed(content)
+def GetNoteContent(noteGuid):
+    global noteStore
+    content = None
+    try:
+        content = noteStore.getNoteContent(noteGuid)
+    except Exception,e:
+        logging.warn(e)
+    return content
 
-for result in parser.ToDo:
-    logging.info("The result is: %s",result)
-    tts.say(result)
+#parser = MyHTMLParser()
+#parser.feed(content)
 
 
 
 if __name__ == "__main__":
+    SignInEvernote()
+    parser = MyHTMLParser()
+    content = GetNoteContent(noteGuid)
+    if content != None :
+        parser.feed(content)
+        for result in parser.ToDo:
+            logging.info("The result is: %s",result)
+            tts.say(result)
     logging.info("你好")

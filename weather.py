@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import json
 import urllib
 import logging
@@ -32,9 +34,9 @@ class weatherReport():
         return self.Flag
 
 def main():
-    weather = weatherReport("shenzhen")
+    weather = weatherReport("beijing")
     if weather.getWeather() == True:
-        logging.info("The weather in shenzhen is:")
+        logging.info("The weather in the city is:")
         logging.info("%s,%.2f,%.2f,%.2f,%.2f",weather.weather_desc,weather.temperature,weather.pressure,weather.humidity,weather.wind_speed)
 
 if __name__ == "__main__":
@@ -42,6 +44,3 @@ if __name__ == "__main__":
     while True:
         main()
         time.sleep(5)
-        
-
-
