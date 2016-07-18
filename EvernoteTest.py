@@ -3,6 +3,8 @@
 import logging
 from evernote.api.client import EvernoteClient
 from HTMLParser import HTMLParser
+import talkey
+
 logging.basicConfig(level='INFO')
 
 class MyHTMLParser(HTMLParser):
@@ -32,6 +34,9 @@ class MyHTMLParser(HTMLParser):
 dev_token = "S=s1:U=92b7b:E=15d39d06877:C=155e21f3928:P=1cd:A=en-devtoken:V=2:H=1304173954fbc76d7432cdf262f7b228"
 noteGuid  = "1e77d88b-49e6-4410-aaf5-c85c3bb70a0d"
 
+tts = talkey.Talkey()
+tts.say("This is a test")
+
 client = EvernoteClient(token=dev_token)
 userStore = client.get_user_store()
 user = userStore.getUser()          # here will throw an error
@@ -49,5 +54,9 @@ parser.feed(content)
 
 for result in parser.ToDo:
     logging.info("The result is: %s",result)
+    tts.say(result)
+
+
+
 if __name__ == "__main__":
     logging.info("你好")
