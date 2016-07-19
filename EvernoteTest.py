@@ -31,6 +31,7 @@ class MyHTMLParser(HTMLParser):
             self.ToDo.append(data)
         else:
             pass
+
 # 3bee4c0c-2caf-413c-9e49-d51da6fcdc8c
 dev_token = "S=s1:U=92b7b:E=15d39d06877:C=155e21f3928:P=1cd:A=en-devtoken:V=2:H=1304173954fbc76d7432cdf262f7b228"
 noteGuid  = "1e77d88b-49e6-4410-aaf5-c85c3bb70a0d"
@@ -44,14 +45,18 @@ noteStore = None
 
 def SignInEvernote():
     global client,noteStore 
+    result = False
     try:
         client = EvernoteClient(token=dev_token)
         userStore = client.get_user_store()
         user = userStore.getUser()          # here will throw an error
         logging.info(user.username)
         noteStore = client.get_note_store()
+        result    = True 
     except Exception, e:
         logging.warn(e)
+    return result
+
 
 def GetNoteContent(noteGuid):
     global noteStore
@@ -65,10 +70,31 @@ def GetNoteContent(noteGuid):
 #parser = MyHTMLParser()
 #parser.feed(content)
 
+#This is the Time Out var.
+TimeOutIndex = 0
 
+weatherSpeach = None
+
+def weatherInformation():
+    speach       = None
+    city         = "shenzhen"
+    weather = weatherReport(city)
+    if weather.getWeather() == True:
+        speach = ("The weather is %s. Temperature: %.1f. Humidity: %.1f%%. Wind speed: %.1f meters per second" % (weather.weather_desc,weather.temperature,weather.humidity,weather.wind_speed))
+        logging.info(speach)
+    return speach
 
 if __name__ == "__main__":
-    SignInEvernote()
+    weatherInformation(tts)
+    SignResult = SignInEvernote()
+    while SignResult == False:
+        TimeOutIndex = TimeOutIndex + 1
+        if TimeOutIndex == 10:
+            logging.warn("Can't Sign in the Evernote")
+            TimeOutIndex = 0
+            break
+        SignResult = SignInEvernote()
+    
     parser = MyHTMLParser()
     content = GetNoteContent(noteGuid)
     if content != None :
@@ -76,4 +102,6 @@ if __name__ == "__main__":
         for result in parser.ToDo:
             logging.info("The result is: %s",result)
             tts.say(result)
+    else:
+        pass
     logging.info("你好")
