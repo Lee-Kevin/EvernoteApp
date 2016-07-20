@@ -5,8 +5,12 @@ from evernote.api.client import EvernoteClient
 from HTMLParser import HTMLParser
 import talkey
 from weather import weatherReport
+import threading 
+import time
 
 logging.basicConfig(level='INFO')
+# define a global threading lock 
+Global_Lock = threading.Lock()
 
 class MyHTMLParser(HTMLParser):
     def __init__(self):
@@ -84,8 +88,53 @@ def weatherInformation():
         logging.info(speach)
     return speach
 
+def GetWeatherThread():
+    global weatherSpeach
+    while True:
+        try:
+            speach = weatherInformation()
+            if speach != None:
+                Global_Lock.acquire()
+                weatherSpeach = speach
+                Global_Lock.release()
+            else:
+                pass
+            time.sleep(10)
+        except KeyboardInterrupt:
+
+            break
+        except Exception,e:
+            logging.info(e)
+
+# A Class to manage the thread
+class GetWeatherInfoTask():
+    def __init__(self):
+        self._running = True
+    def terminate(self):
+        self._running = False
+    def run(self,TimeInterval):
+        global Global_Lock
+        while self._running:
+            speach = weatherInformation()
+            if speach != None:
+                global Global_Lock
+                Global_Lock.acquire()
+                weatherSpeach = speach
+                Global_Lock.release()
+            else:
+                pass
+            time.sleep(TimeInterval)
+
+
+
 if __name__ == "__main__":
-    weatherInformation(tts)
+#    Task1_weather = threading.Thread(target = GetWeatherThread,name = 'Weather Thread')
+#    Task1_weather.start()
+    Task1Weather = GetWeatherInfoTask()
+    Task1WeatherThread = threading.Thread(target=Task1Weather.run, name="Weather Task", args=(5,))
+    Task1WeatherThread.start()
+
+
     SignResult = SignInEvernote()
     while SignResult == False:
         TimeOutIndex = TimeOutIndex + 1
@@ -105,3 +154,24 @@ if __name__ == "__main__":
     else:
         pass
     logging.info("你好")
+    while True:
+        try:
+            logging.info("This is in loop")
+            time.sleep(10)
+            Task1Weather.terminate()
+
+        except KeyboardInterrupt:
+            exit()
+        except Exception, e:
+            logging.info(e)
+        if Task1WeatherThread.is_alive():
+            logging.info("The Thread is still running")
+
+        else:
+            logging.info("The Thread isn't running")
+
+            Task1WeatherThread = threading.Thread(target=Task1Weather.run, name="Weather Task", args=(5,))
+            Task1WeatherThread.start()
+            while True:
+                time.sleep(3)
+                logging.info("This is in Loop2")
