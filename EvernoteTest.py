@@ -35,6 +35,11 @@ class MyHTMLParser(HTMLParser):
             self.ToDo.append(data)
         else:
             pass
+    def GetResult(self):
+        result = self.ToDo
+        self.ToDo = []
+        return result
+        
 
 # 3bee4c0c-2caf-413c-9e49-d51da6fcdc8c
 dev_token = "S=s1:U=92b7b:E=15d39d06877:C=155e21f3928:P=1cd:A=en-devtoken:V=2:H=1304173954fbc76d7432cdf262f7b228"
@@ -88,52 +93,82 @@ def weatherInformation():
         logging.info(speach)
     return speach
 
-def GetWeatherThread():
-    global weatherSpeach
-    while True:
-        try:
-            speach = weatherInformation()
-            if speach != None:
-                Global_Lock.acquire()
-                weatherSpeach = speach
-                Global_Lock.release()
-            else:
-                pass
-            time.sleep(10)
-        except KeyboardInterrupt:
 
-            break
-        except Exception,e:
-            logging.info(e)
+# A new class that used to manage the thread 
 
-# A Class to manage the thread
-class GetWeatherInfoTask():
-    def __init__(self):
+class GetWeatherInfoThread(threading.Thread):
+    def __init__(self,timeout = 1.0):
+        threading.Thread.__init__(self)
+        self.timeout = timeout
         self._running = True
+        self.weatherSpeach = None
+        self.subthread = None
+
     def terminate(self):
         self._running = False
-    def run(self,TimeInterval):
-        global Global_Lock
-        while self._running:
-            speach = weatherInformation()
-            if speach != None:
-                global Global_Lock
-                Global_Lock.acquire()
-                weatherSpeach = speach
-                Global_Lock.release()
-            else:
-                pass
-            time.sleep(TimeInterval)
+    def runloop(self,TimeInterval):
+        self._running = True 
+        def TargetFun(self, _TimeInterval):
+            while self._running:
+                speach = weatherInformation()
+                if speach != None:
+                    global Global_Lock
+                    Global_Lock.acquire()
+                    self.weatherSpeach = speach
+                    Global_Lock.release()
+                else:
+                    pass
+                import time
+                time.sleep(_TimeInterval)
+        self.subthread = threading.Thread(target=TargetFun,args=(self, TimeInterval,))
+        self.subthread.start()
+    def isRunning(self):
+        if self.subthread.is_alive():
+            return True
+        else:
+            return False
+
+# A new class that used to manage the thread 
+
+class GetEvernoteThread(threading.Thread):
+    def __init__(self,timeout = 1.0):
+        threading.Thread.__init__(self)
+        self.timeout = timeout
+        self._running = True
+        self.content = None
+        self.subthread = None
+
+    def terminate(self):
+        self._running = False
+    def runloop(self,TimeInterval,noteGuid):
+        self._running = True 
+        def TargetFun(self, _TimeInterval,_noteGuid):
+            while self._running:
+                content = GetNoteContent(_noteGuid)
+                if content != None:
+                    global Global_Lock
+                    Global_Lock.acquire()
+                    self.content = content
+                    Global_Lock.release()
+                else:
+                    pass
+                import time
+                time.sleep(_TimeInterval)
+        self.subthread = threading.Thread(target=TargetFun,args=(self, TimeInterval,noteGuid))
+        self.subthread.start()
+    def isRunning(self):
+        if self.subthread.is_alive():
+            return True
+        else:
+            return False
+
 
 
 
 if __name__ == "__main__":
-#    Task1_weather = threading.Thread(target = GetWeatherThread,name = 'Weather Thread')
-#    Task1_weather.start()
-    Task1Weather = GetWeatherInfoTask()
-    Task1WeatherThread = threading.Thread(target=Task1Weather.run, name="Weather Task", args=(5,))
-    Task1WeatherThread.start()
 
+    Task1Weather = GetWeatherInfoThread()
+    Task1Weather.runloop(5)   # The Time Interval is 5 second
 
     SignResult = SignInEvernote()
     while SignResult == False:
@@ -144,34 +179,34 @@ if __name__ == "__main__":
             break
         SignResult = SignInEvernote()
     
+    Task2Evernote = GetEvernoteThread()
+    Task2Evernote.runloop(10,noteGuid) 
     parser = MyHTMLParser()
-    content = GetNoteContent(noteGuid)
-    if content != None :
-        parser.feed(content)
-        for result in parser.ToDo:
-            logging.info("The result is: %s",result)
-            tts.say(result)
-    else:
-        pass
+
     logging.info("你好")
     while True:
         try:
             logging.info("This is in loop")
-            time.sleep(10)
-            Task1Weather.terminate()
+            time.sleep(6)
+            logging.info(Task1Weather.weatherSpeach)
+            if Task1Weather.weatherSpeach != None:
+                tts.say(Task1Weather.weatherSpeach)
+            else:
+                pass
+            if Task2Evernote.content != None:
+                parser.feed(Task2Evernote.content)
+                content = parser.GetResult()
+                for result in content:
+                    logging.info("The result is :%s",result)
+                    tts.say(result)
+            else :
+                pass
 
         except KeyboardInterrupt:
+            Task1Weather.terminate()
+            Task2Evernote.terminate()
             exit()
         except Exception, e:
             logging.info(e)
-        if Task1WeatherThread.is_alive():
-            logging.info("The Thread is still running")
 
-        else:
-            logging.info("The Thread isn't running")
-
-            Task1WeatherThread = threading.Thread(target=Task1Weather.run, name="Weather Task", args=(5,))
-            Task1WeatherThread.start()
-            while True:
-                time.sleep(3)
-                logging.info("This is in Loop2")
+            
