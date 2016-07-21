@@ -28,3 +28,21 @@ import talkey
 tts = talkey.Talkey()
 tts.say('Old McDonald had a farm')
 ```
+## Install Evernote SDK
+The Evernote provide a very useful  python api. Click [here](https://dev.evernote.com/doc/start/python.php) to get a Quick-start Guid about python SDK.
+···
+pip install evernote
+···
+
+## Change the Code 
+Chane the code in line 45 and 46 to your own dev_token and NoteGuid
+```
+dev_token = "your own token"
+noteGuid  = "your note book Guid"
+```
+## Run the Code
+```
+python EvernoteTest.py
+```
+
+If you have any questions about this project, please just let me know, my email lidreamer@foxmail.com or lidreamer@163.com
